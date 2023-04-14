@@ -1,13 +1,17 @@
 //// tüm linklerin olduğu başlık kısmı
 import React, { useState } from 'react'
 import styles from "./Header.module.scss";
-import {Link, NavLink} from "react-router-dom"
+import {Link, NavLink,useNavigate} from "react-router-dom"
 import { FaShoppingCart,FaTimes  } from "react-icons/fa"
 import { HiOutlineMenuAlt3 } from "react-icons/hi"
-
+import { signOut } from "firebase/auth";
+import {auth} from "../../firebase/config"
+import {toast} from "react-toastify"
+ 
 const Header = () => {
 
   const [showMenu,setShowMenu] = useState(false);
+  const navigate=useNavigate();
 
   const toggleMenu = () => {
     setShowMenu(!showMenu)
@@ -16,6 +20,16 @@ const Header = () => {
   const hideMenu = () => {
     setShowMenu(false)
   }
+
+  const logoutUser=()=>{
+    signOut(auth).then(() => {
+      toast.success("Logout is Successfull..")
+      navigate("/")
+    }).catch((error) => {
+       toast.error(error.message)   
+    });
+  }
+
   const logo = (
     <div className={styles.logo}>
       <Link to="/">
@@ -57,6 +71,7 @@ const Header = () => {
             <span className={styles.links}>
               <NavLink className={activeLink} to="/login">Login</NavLink>
               <NavLink className={activeLink} to="/order-history">My Orders</NavLink>
+              <NavLink onClick={logoutUser} to="/">Logout</NavLink>
             </span>
             {cart}
           </div>
