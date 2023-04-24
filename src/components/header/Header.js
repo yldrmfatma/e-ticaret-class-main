@@ -1,17 +1,56 @@
 //// tüm linklerin olduğu başlık kısmı
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import styles from "./Header.module.scss";
-import {Link, NavLink,useNavigate} from "react-router-dom"
-import { FaShoppingCart,FaTimes  } from "react-icons/fa"
+import { Link, NavLink, useNavigate } from "react-router-dom"
+import { FaShoppingCart, FaTimes, FaUserCircle } from "react-icons/fa"
 import { HiOutlineMenuAlt3 } from "react-icons/hi"
-import { signOut } from "firebase/auth";
-import {auth} from "../../firebase/config"
-import {toast} from "react-toastify"
- 
+import { onAuthStateChanged, signOut } from "firebase/auth"
+import { auth } from "../../firebase/config"
+import { toast } from "react-toastify"
+import { useDispatch } from 'react-redux'
+import { SET_ACTIVE_USER, REMOVE_ACTIVE_USER } from '../../redux/slice/authSlice';
+import { ShowOnLogin, ShowOnLogout } from '../hiddenLink/hiddenLink';
+
 const Header = () => {
 
-  const [showMenu,setShowMenu] = useState(false);
-  const navigate=useNavigate();
+  const [showMenu, setShowMenu] = useState(false);
+
+  const [displayName, setDisplayName] = useState("");
+
+  const navigate = useNavigate();
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        if (user.displayName == null) {
+          const u1 = user.email.slice(0, user.email.lastIndexOf("@"))
+          const uName = u1.charAt(0).toUpperCase() + u1.slice(1)
+          setDisplayName(uName)
+
+
+        }
+        else {
+          //const uid = user.uid
+          setDisplayName(user.displayName)
+          // console.log(user)
+        }
+
+        dispatch(SET_ACTIVE_USER({
+          email: user.email,
+          userName: user.displayName ? user.displayName : displayName,
+          userID: user.uid
+        }))
+      }
+      else {
+        setDisplayName("")
+        dispatch(REMOVE_ACTIVE_USER())
+
+      }
+    })
+
+  }, [dispatch, displayName])//sadece ekran yenilendiği zaman bir kere çalıştıracak
 
   const toggleMenu = () => {
     setShowMenu(!showMenu)
@@ -21,12 +60,12 @@ const Header = () => {
     setShowMenu(false)
   }
 
-  const logoutUser=()=>{
+  const logoutUser = () => {
     signOut(auth).then(() => {
       toast.success("Logout is Successfull..")
       navigate("/")
     }).catch((error) => {
-       toast.error(error.message)   
+      toast.error(error.message)
     });
   }
 
@@ -43,18 +82,18 @@ const Header = () => {
     <span className={styles.cart}>
       <Link to="/cart">
         Cart
-        <FaShoppingCart size={20}/>
+        <FaShoppingCart size={20} />
         <p>0</p>
       </Link>
     </span>
   )
-  const activeLink=(({isActive})=>(isActive ? `${styles.active}`:""))
+  const activeLink = (({ isActive }) => (isActive ? `${styles.active}` : ""))
   return (
     <header>
       <div className={styles.header}>
         {logo}
-        <nav className={ showMenu ? `${styles["show-nav"]}` : `${styles["hide-nav"]}`}>
-          <div className={ showMenu ? `${styles["nav-wrapper"]} ${styles["show-nav-wrapper"]}` : `${styles["nav-wrapper"]}`} onClick={hideMenu}></div>
+        <nav className={showMenu ? `${styles["show-nav"]}` : `${styles["hide-nav"]}`}>
+          <div className={showMenu ? `${styles["nav-wrapper"]} ${styles["show-nav-wrapper"]}` : `${styles["nav-wrapper"]}`} onClick={hideMenu}></div>
           <ul onClick={hideMenu}>
             <li className={styles["logo-mobile"]}>
               {logo}
@@ -69,16 +108,24 @@ const Header = () => {
           </ul>
           <div className={styles["header-right"]} onClick={hideMenu}>
             <span className={styles.links}>
-              <NavLink className={activeLink} to="/login">Login</NavLink>
-              <NavLink className={activeLink} to="/order-history">My Orders</NavLink>
-              <NavLink onClick={logoutUser} to="/">Logout</NavLink>
+              <ShowOnLogout>
+                <NavLink className={activeLink} to="/login">Login</NavLink>
+              </ShowOnLogout>
+              <ShowOnLogin>
+                <a href="#home" style={{ color: "#ff7722" }}>
+                  <FaUserCircle size={16} />
+                  Hi, {displayName}&nbsp;
+                </a>
+                <NavLink className={activeLink} to="/order-history">My Orders</NavLink>
+                <NavLink onClick={logoutUser} to="/">Logout</NavLink>
+              </ShowOnLogin>
             </span>
             {cart}
           </div>
         </nav>
         <div className={styles["menu-icon"]}>
           {cart}
-          <HiOutlineMenuAlt3 size={28} onClick={toggleMenu}/>
+          <HiOutlineMenuAlt3 size={28} onClick={toggleMenu} />
         </div>
       </div>
     </header>

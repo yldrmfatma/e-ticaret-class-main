@@ -54,7 +54,7 @@ const Login = () => {
   }
   return (
     <>
-      {isLoading && <Loader />}
+      {isLoading && <Loader/>}
       <section className={`container ${styles.auth}`} >
         <div className={styles.img}>
           <img src={loginImg} alt="Login" width="400" />
