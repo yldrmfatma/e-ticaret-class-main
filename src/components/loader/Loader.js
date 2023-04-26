@@ -8,10 +8,11 @@ const Loader = () => {
   return ReactDOM.createPortal (
     <div className={styles.wrapper} >
       <div className={styles.Loader} >
-        <img src={loaderImg} alt="Loading.." ></img>
+      <img src={loaderImg} alt="Loading.."/>
       </div>
     </div>,document.getElementById("loader")
   )
 }
+
 
 export default Loader

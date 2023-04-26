@@ -3,8 +3,11 @@ import React, { useState } from 'react'
 import styles from "./AddProduct.module.scss"
 import Card from "../../card/Card"
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "../../../firebase/config"
+import { db, storage } from "../../../firebase/config"
 import { toast } from 'react-toastify';
+import { Timestamp, addDoc, collection } from 'firebase/firestore';
+import Loader from "../../loader/Loader"
+import { useNavigate } from 'react-router-dom';
 
 
 const categories = [
@@ -15,16 +18,22 @@ const categories = [
 ]
 
 const AddProduct = () => {
-  const [product, setProduct] = useState({
+  const initialState={
     name: "",
     imageURL: "",
     price: 0,
     category: "",
     brand: "",
     desc: "",
+  }
+  const [product, setProduct] = useState({
+   ...initialState
   })
 
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const navigate=useNavigate()
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setProduct({ ...product, [name]: value })
@@ -55,9 +64,32 @@ const AddProduct = () => {
   }
   const addProduct = (e) => {
     e.preventDefault();
-    console.log(product)
+    // console.log(product) // ekstra veri kaybını önlemek için 
+    setIsLoading(true)
+    try {
+      addDoc(collection(db, "products"), {
+        name: product.name,
+        imageURL: product.imageURL,
+        price: Number(product.price),
+        category: product.category,
+        brand: product.brand,
+        desc: product.desc,
+        createdAt: Timestamp.now().toDate()
+      })
+      setIsLoading(false)
+      setUploadProgress(0)
+      setProduct({...initialState})
+      toast.success("Product uploaded successfully.")
+      navigate("/admin/all-products")
+    }
+    catch (error) {
+      setIsLoading(false)
+      toast.error(error.message)
+    }
   }
   return (
+    <>
+    {isLoading && <Loader/>}
     <div className={styles.product} >
       <h2>Add New Product</h2>
       <Card cardClass={styles.card}>
@@ -69,12 +101,12 @@ const AddProduct = () => {
           <Card cardClass={styles.group} >
             {uploadProgress === 0 ? null : (<div className={styles.progress}>
               <div className={styles["progress-bar"]} style={{ width: `${uploadProgress}%` }}>
-               {uploadProgress<100 ? `Uploading ${uploadProgress}`:`Upload Complete${uploadProgress}%`}
+                {uploadProgress < 100 ? `Uploading ${uploadProgress}` : `Upload Complete${uploadProgress}%`}
               </div>
             </div>)}
-           <input type="file" accept='image/*' placeholder='Product Image' name="image"
-              onChange={(e) => handleImageChange(e)} />{product.imageURL===""? null: 
-            <input type='text' value={product.imageURL} placeholder='Image URL' name="imageURL" disabled/>}
+            <input type="file" accept='image/*' placeholder='Product Image' name="image"
+              onChange={(e) => handleImageChange(e)} />{product.imageURL === "" ? null :
+                <input type='text' value={product.imageURL} placeholder='Image URL' name="imageURL" disabled />}
           </Card>
           <label>Product Price:</label>
           <input type="number" placeholder="Product Price" required name="price" value={product.price} onChange={(e) => handleInputChange(e)}
@@ -98,6 +130,7 @@ const AddProduct = () => {
         </form>
       </Card>
     </div>
+    </>
   )
 }
 
